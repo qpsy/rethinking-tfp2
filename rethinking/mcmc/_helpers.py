@@ -1,7 +1,7 @@
 import arviz as az
 import numpy as np
-import random # DY
-import jax # DY
+import random
+import jax
 import tensorflow as tf
 from tensorflow_probability.substrates import jax as tfp
 # import tensorflow_probability as tfp
@@ -83,9 +83,8 @@ def run_hmc_chain(
     return results, sampler_stat
 
 
-
-get_seed = lambda: random.randint(0, 1000_000)
-get_key = lambda: jax.random.key(get_seed())
+def get_key():
+    return jax.random.key(random.randint(0, 1000_000))
 
 def sample_posterior(
     jdc,
@@ -100,10 +99,12 @@ def sample_posterior(
 ):
 
     if init_state is None:
-        # DY: tfp.substrates.jax needs seed for sampling
-        init_state = list(jdc.sample(num_chains, seed=get_key())[:-1])
+        # tfp.substrates.jax needs seed for sampling
+        # - list()[:-1]: select all samples except the last (output)
         # init_state = list(jdc.sample(num_chains)[:-1])
-
+        init_state = [jdc.sample(num_chains, seed=get_key()) 
+                      [d] for d in params]
+        
     if bijectors is None:
         bijectors = [tfb.Identity() for i in init_state]
 
