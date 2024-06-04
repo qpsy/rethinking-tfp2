@@ -44,7 +44,6 @@ def _trace_to_arviz(
     )
 
 
-@tf.function(autograph=False, jit_compile=True)
 def run_hmc_chain(
     init_state,
     bijectors,
@@ -54,13 +53,22 @@ def run_hmc_chain(
     num_samples=NUMBER_OF_SAMPLES,
     burnin=NUMBER_OF_BURNIN,
 ):
-    def _trace_fn_transitioned(_, pkr):
-        return pkr.inner_results.inner_results.log_accept_ratio
+    # Hint from 'TensorFlow Probability on JAX' tutorial
+    # def _trace_fn_transitioned(_, pkr):
+    #     return pkr.inner_results.log_accept_ratio
+    def _trace_fn_transitioned(_, results):
+        return results.target_log_prob
 
     hmc_kernel = tfp.mcmc.HamiltonianMonteCarlo(
-        target_log_prob_fn, num_leapfrog_steps=num_leapfrog_steps, step_size=step_size
+        target_log_prob_fn, 
+        step_size=step_size,
+        num_leapfrog_steps=num_leapfrog_steps,
+        state_gradients_are_stopped=False,
+        store_parameters_in_results=False,
+        experimental_shard_axis_names=None,
+        name=None
     )
-
+    
     inner_kernel = tfp.mcmc.TransformedTransitionKernel(
         inner_kernel=hmc_kernel, bijector=bijectors
     )
@@ -78,13 +86,11 @@ def run_hmc_chain(
         current_state=init_state,
         kernel=kernel,
         trace_fn=_trace_fn_transitioned,
+        seed=get_key()
     )
 
     return results, sampler_stat
 
-
-def get_key():
-    return jax.random.key(random.randint(0, 1000_000))
 
 def sample_posterior(
     jdc,
@@ -102,8 +108,7 @@ def sample_posterior(
         # tfp.substrates.jax needs seed for sampling
         # - list()[:-1]: select all samples except the last (output)
         # init_state = list(jdc.sample(num_chains)[:-1])
-        init_state = [jdc.sample(num_chains, seed=get_key()) 
-                      [d] for d in params]
+        init_state = tuple(jdc.sample(seed=get_key()) [d] for d in params)
         
     if bijectors is None:
         bijectors = [tfb.Identity() for i in init_state]
