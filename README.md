@@ -39,7 +39,7 @@ def _generator_x():
   a = yield tfdx.Normal(loc=0.0, scale=1.0, name="a")
   ...
 
-model_x = tfd.JointDistributionCoroutineAutoBatched(_generator_x)
+model_x = tfdx.JointDistributionCoroutineAutoBatched(_generator_x)
 model_x.sample_distributions(value=post)
 ```
 For details, please see Chapter 7 and 8.
