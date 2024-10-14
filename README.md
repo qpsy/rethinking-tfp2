@@ -2,7 +2,7 @@
 
 This repository replicates Kapil Sachdeva's excellent [implementation] 
 (https://github.com/ksachdeva/rethinking-tensorflow-probability) using
-jax subtrate of Tensorflow Probability and 
+jax substrate of Tensorflow Probability and 
 'AutoBatched' JointDistribution (especially JointDistributionCoroutineAutoBatched).
 
 ## Note
