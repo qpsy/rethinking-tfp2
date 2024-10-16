@@ -43,3 +43,30 @@ model_x = tfdx.JointDistributionCoroutineAutoBatched(_generator_x)
 model_x.sample_distributions(value=post)
 ```
 For details, please see Chapter 7 and 8.
+
+
+- tfd.Poission treats observations (through experimental_pin) as batch in tfd.JointDistribution[...]AutoBatched
+
+A remedy: use tfd.Sample
+```python
+def model():
+  def _generator():
+    ...
+    yield tfd.Sample(tfd.Poisson(rate=rate), sample_shape=sample_shape)
+  return tfd.JointDistributionCoroutineAutoBatched(_generator)
+```
+See Ch11, C12 for details.
+
+
+- confusing parameters in tfd.NegativeBinomial 
+
+The [official document] 
+(https://www.tensorflow.org/probability/api_docs/python/tfp/distributions/NegativeBinomial) says,
+
+Given a Bernoulli trial with probability p of success, the NegativeBinomial distribution represents the distribution over the number of successes s that occur until we observe f failures, where total_count = f, probs = p.
+
+However, results show that 'total_count = s, probs = 1-p' are the correct parameters. e.g.,
+```python
+tfd.NegativeBinomial(total_count=1., probs=.3).prob([1., 2., 3.])
+# == dnbinom(c(1, 2, 3), size=1, prob=.7)
+```
